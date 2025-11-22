@@ -5,6 +5,9 @@ import mss.tools
 import io
 import time
 
+import ssl
+import certifi
+
 class ScreenStreamer:
     def __init__(self, region):
         self.region = region
@@ -16,13 +19,19 @@ class ScreenStreamer:
         HOSTED_URL = "wss://screensharer-production.up.railway.app"
         
         # Set this to LOCAL_URL or HOSTED_URL
-        CURRENT_URL = LOCAL_URL
         CURRENT_URL = HOSTED_URL
         
         print(f"Connecting to {CURRENT_URL}...")
         self.running = True
+        
+        # Prepare SSL context if needed
+        ssl_context = None
+        if CURRENT_URL.startswith("wss://"):
+            ssl_context = ssl.create_default_context()
+            ssl_context.load_verify_locations(certifi.where())
+            
         try:
-            async with websockets.connect(CURRENT_URL) as websocket:
+            async with websockets.connect(CURRENT_URL, ssl=ssl_context) as websocket:
                 print("Connected to server.")
                 await websocket.send("REGISTER_RECORDER")
                 print("Sent identification.")
