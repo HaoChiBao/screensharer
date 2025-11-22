@@ -11,17 +11,31 @@ class ScreenStreamer:
         self.running = False
 
     async def stream(self):
-        uri = "ws://localhost:8765"
-        self.running = True
+        # Configuration
+        LOCAL_URL = "ws://localhost:8080"
+        HOSTED_URL = "wss://screensharer-production.up.railway.app"
         
-        print(f"Connecting to {uri}...")
+        # Set this to LOCAL_URL or HOSTED_URL
+        CURRENT_URL = LOCAL_URL
+        CURRENT_URL = HOSTED_URL
+        
+        print(f"Connecting to {CURRENT_URL}...")
+        self.running = True
         try:
-            async with websockets.connect(uri) as websocket:
+            async with websockets.connect(CURRENT_URL) as websocket:
                 print("Connected to server.")
+                await websocket.send("REGISTER_RECORDER")
+                print("Sent identification.")
+                
                 with mss.mss() as sct:
+                    print("Initialized MSS.")
                     while self.running:
                         # Capture the screen
-                        img = sct.grab(self.region)
+                        try:
+                            img = sct.grab(self.region)
+                        except Exception as e:
+                            print(f"MSS grab error: {e}")
+                            break
                         
                         # Convert to PNG
                         # mss.tools.to_png(img.rgb, img.size, output="debug.png") # Debug
@@ -42,6 +56,9 @@ class ScreenStreamer:
                         
         except Exception as e:
             print(f"Streaming error: {e}")
+        except BaseException as e:
+            print(f"Critical error: {type(e).__name__}: {e}")
+            raise
         finally:
             print("Streaming stopped.")
 

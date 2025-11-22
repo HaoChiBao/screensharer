@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,18 +17,21 @@
             background-color: #222;
             color: #eee;
         }
+
         #status {
             margin-bottom: 10px;
             color: #aaa;
         }
+
         #stream {
             max-width: 90%;
             max-height: 80vh;
             border: 2px solid #444;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
         }
     </style>
 </head>
+
 <body>
     <h1>Live Screen Share</h1>
     <div id="status">Connecting...</div>
@@ -36,26 +40,35 @@
     <script>
         const statusDiv = document.getElementById('status');
         const img = document.getElementById('stream');
-        
+
+        // Configuration
+        const LOCAL_URL = 'ws://localhost:8080';
+        const HOSTED_URL = 'wss://screensharer-production.up.railway.app';
+
+        // Set this to LOCAL_URL or HOSTED_URL
+        let CURRENT_URL = HOSTED_URL;
+        // CURRENT_URL = LOCAL_URL;
+
         function connect() {
-            const ws = new WebSocket('ws://localhost:8765');
-            
+            const ws = new WebSocket(CURRENT_URL);
+
             ws.binaryType = 'blob';
 
             ws.onopen = () => {
                 statusDiv.textContent = 'Connected. Waiting for stream...';
                 statusDiv.style.color = '#4caf50';
+                ws.send("REGISTER_VIEWER");
             };
 
             ws.onmessage = (event) => {
                 const blob = event.data;
                 const url = URL.createObjectURL(blob);
-                
+
                 // Revoke previous URL to avoid memory leaks
                 if (img.src.startsWith('blob:')) {
                     URL.revokeObjectURL(img.src);
                 }
-                
+
                 img.src = url;
                 statusDiv.textContent = `Receiving stream... (${blob.size} bytes)`;
             };
@@ -75,4 +88,5 @@
         connect();
     </script>
 </body>
+
 </html>
