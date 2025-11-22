@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screen Share Viewer</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #222;
+            color: #eee;
+        }
+        #status {
+            margin-bottom: 10px;
+            color: #aaa;
+        }
+        #stream {
+            max-width: 90%;
+            max-height: 80vh;
+            border: 2px solid #444;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+    <h1>Live Screen Share</h1>
+    <div id="status">Connecting...</div>
+    <img id="stream" alt="Waiting for stream..." />
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const img = document.getElementById('stream');
+        
+        function connect() {
+            const ws = new WebSocket('ws://localhost:8765');
+            
+            ws.binaryType = 'blob';
+
+            ws.onopen = () => {
+                statusDiv.textContent = 'Connected. Waiting for stream...';
+                statusDiv.style.color = '#4caf50';
+            };
+
+            ws.onmessage = (event) => {
+                const blob = event.data;
+                const url = URL.createObjectURL(blob);
+                
+                // Revoke previous URL to avoid memory leaks
+                if (img.src.startsWith('blob:')) {
+                    URL.revokeObjectURL(img.src);
+                }
+                
+                img.src = url;
+                statusDiv.textContent = `Receiving stream... (${blob.size} bytes)`;
+            };
+
+            ws.onclose = () => {
+                statusDiv.textContent = 'Disconnected. Reconnecting in 3s...';
+                statusDiv.style.color = '#f44336';
+                setTimeout(connect, 3000);
+            };
+
+            ws.onerror = (err) => {
+                console.error('WebSocket error:', err);
+                ws.close();
+            };
+        }
+
+        connect();
+    </script>
+</body>
+</html>
